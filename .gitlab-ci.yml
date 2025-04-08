@@ -1,0 +1,13 @@
+# image: node:lts-alpine
+
+# stages:
+#   - publish-npm
+
+# publish-npm:
+#   stage: publish-npm
+#   script:
+#     - echo "@iot:registry=https://${CI_SERVER_HOST}:${CI_SERVER_PORT}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/" > .npmrc
+#     - echo "//${CI_SERVER_HOST}:${CI_SERVER_PORT}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=${CI_JOB_TOKEN}" >> .npmrc
+#     - yarn install
+#     - yarn build
+#     - npm publish
