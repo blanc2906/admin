@@ -5,6 +5,8 @@ export type RuleInstance =
   | InstanceType<typeof SampleCF>
   | InstanceType<typeof ServerInforCF>;
 export const configurations = [
-  // sampleConfigurations,
-  // serverInforConfigurations
-];
+
+    // sampleConfigurations,
+    // serverInforConfigurations
+]
+

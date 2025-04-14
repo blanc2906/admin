@@ -20,7 +20,7 @@ export class MConfigService implements OnModuleInit {
         });
     }
 
-    async get(key: string): Promise<any> {
+    async get<T>(key: string): Promise<T> {
         let value = await this.cacheManager.get(key);
         if (!value) {
             const variable = await this.prismaService.configuration.findUnique({ where: { key } });
@@ -31,7 +31,7 @@ export class MConfigService implements OnModuleInit {
                 throw new Error(`Configuration variable with key ${key} not found in database`);
             }
         }
-        return value;
+        return value as T;
     }
 
     async getConfig<T>(rule: ConfigurationRule<T>): Promise<T> {

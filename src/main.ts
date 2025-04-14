@@ -1,16 +1,18 @@
-import { NestApplicationOptions } from '@nestjs/common';
+import { NestApplicationOptions, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
-import { NestExpressApplication } from '@nestjs/platform-express';
+
 import { TAppConfig } from '@shared/config/app.config';
 import { GlobalExceptionsFilter } from '@shared/filter/global-exception.filter';
 import { CLogger } from '@shared/logger/custom-logger';
 
 import { AppModule } from './app.module';
+import { ResponseInterceptor } from './shared/interceptor/response.interceptor';
 
 dotenv.config({
   path:
@@ -33,7 +35,10 @@ async function bootstrap() {
     };
   }
   // End Enable TLS
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, options);
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    options,
+  );
   // Get app configs
   const configService = app.get(ConfigService);
 
@@ -44,6 +49,14 @@ async function bootstrap() {
   // Global setup
   app.setGlobalPrefix(apiPrefix);
   app.useGlobalFilters(new GlobalExceptionsFilter());
+  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Loại bỏ các field không có trong DTO
+      forbidNonWhitelisted: true, // Báo lỗi nếu có field lạ
+      transform: true, // Tự động chuyển đổi kiểu dữ liệu (string → number, v.v.)
+    }),
+  );
   // Swagger setup
   const document = SwaggerModule.createDocument(
     app,

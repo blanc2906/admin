@@ -9,6 +9,8 @@ import { SyncModule } from '@sync/sync.module';
 import { MConfigModule } from '@m-config/m-config.module';
 import appConfig from '@shared/config/app.config';
 import { MConfigService } from '@m-config/services/config.service';
+import { UserModule } from './modules/user/user.module';
+import { YoolifeModule } from './modules/yoolife/yoolife.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,7 +26,9 @@ import { MConfigService } from '@m-config/services/config.service';
     BrandModule,
     EstateModule,
     SyncModule,
-    FeatureModule
+    FeatureModule,
+    UserModule,
+    YoolifeModule,
   ],
   controllers: [],
 })

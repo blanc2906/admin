@@ -7,9 +7,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { HttpArgumentsHost } from '@nestjs/common/interfaces/features/arguments-host.interface';
+
+import { Response } from 'express';
+
 import { CHttpException } from '@shared/exception/http.exception';
 import { TransformResponse } from '@shared/util/response.transform';
-import { Response } from 'express';
 
 const handleReply = (
   res: Response,
@@ -70,7 +72,6 @@ export class GlobalExceptionsFilter implements ExceptionFilter {
   ): void {
     // Handling error message and logging
     handleMessage(exception, this.logger);
-
     const ctx: HttpArgumentsHost = host.switchToHttp();
     const reply = ctx.getResponse<Response>();
     handleReply(reply, exception);
