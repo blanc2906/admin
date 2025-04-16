@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { EstateMemberRole, EstateMemberStatus } from '@prisma/client';
+import { IsEnum, IsNumber, IsOptional } from 'class-validator';
 
 export class EstateMemberDto {
   userId: number;
@@ -22,4 +23,18 @@ export class EstateMemberDto {
   createdAt: Date;
 
   updatedAt?: Date;
+}
+
+export class GetAllMembersDto {
+  @IsNumber()
+  @IsOptional()
+  estateId?: number;
+
+  @IsEnum(EstateMemberRole)
+  @IsOptional()
+  role?: EstateMemberRole;
+
+  @IsEnum(EstateMemberStatus)
+  @IsOptional()
+  status?: EstateMemberStatus;
 }

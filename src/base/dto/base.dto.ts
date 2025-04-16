@@ -1,19 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { Transform, Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
 
 export class BQueryParams {
   @ApiProperty({
     required: true,
     type: Number,
-    default: 0,
+    default: 1,
     description: 'Page number',
   })
   @IsNotEmpty()
   @Type(() => Number)
   @IsNumber()
+  @Min(1, { message: 'Page must be greater than or equal to 1' })
   page: number;
+
   @ApiProperty({
     required: false,
     type: Number,
@@ -23,29 +37,38 @@ export class BQueryParams {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(1, { message: 'Limit must be greater than or equal to 1' })
   limit?: number;
+
   @ApiProperty({
     required: false,
     type: String,
     description: 'Sort by field',
   })
   @IsOptional()
+  @IsString()
   sortBy?: string;
+
   @ApiProperty({
     required: false,
     type: String,
-    enum: ['asc', 'desc'],
+    enum: SortOrder,
+    default: SortOrder.DESC,
     description: 'Sort order',
   })
   @IsOptional()
-  order?: 'asc' | 'desc';
+  @IsEnum(SortOrder)
+  order?: SortOrder;
+
   @ApiProperty({
     required: false,
     type: String,
     description: 'Search value',
   })
   @IsOptional()
+  @IsString()
   search?: string;
+
   @ApiProperty({
     required: false,
     type: [String],

@@ -1,12 +1,6 @@
 -- CreateEnum
 CREATE TYPE "EstateType" AS ENUM ('DEFAULT', 'APARTMENT', 'HOUSE', 'COMMERCIAL', 'SCHOOL');
 
--- CreateEnum
-CREATE TYPE "EstateMemberRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER');
-
--- CreateEnum
-CREATE TYPE "EstateMemberStatus" AS ENUM ('ACTIVE', 'PENDING', 'BLOCKED');
-
 -- AlterTable
 ALTER TABLE "AdminAccount" ADD COLUMN     "active" BOOLEAN NOT NULL DEFAULT true,
 ADD COLUMN     "deletedAt" TIMESTAMP(3);
@@ -30,7 +24,6 @@ CREATE TABLE "Estate" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "description" TEXT,
-    "address" TEXT,
     "imageFileUrls" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "imageFileIds" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "type" "EstateType" NOT NULL,
@@ -55,20 +48,6 @@ CREATE TABLE "EstateArea" (
     "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "EstateArea_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "EstateMember" (
-    "role" "EstateMemberRole" NOT NULL,
-    "estateId" INTEGER NOT NULL,
-    "userId" INTEGER NOT NULL,
-    "nickname" VARCHAR(50),
-    "status" "EstateMemberStatus" NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "deletedAt" TIMESTAMP(3),
-
-    CONSTRAINT "EstateMember_pkey" PRIMARY KEY ("estateId","userId")
 );
 
 -- CreateTable
@@ -134,9 +113,6 @@ CREATE INDEX "Estate_createdById_idx" ON "Estate"("createdById");
 CREATE INDEX "EstateArea_estateId_idx" ON "EstateArea"("estateId");
 
 -- CreateIndex
-CREATE INDEX "EstateMember_userId_estateId_idx" ON "EstateMember"("userId", "estateId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
@@ -156,12 +132,6 @@ ALTER TABLE "Estate" ADD CONSTRAINT "Estate_createdById_fkey" FOREIGN KEY ("crea
 
 -- AddForeignKey
 ALTER TABLE "EstateArea" ADD CONSTRAINT "EstateArea_estateId_fkey" FOREIGN KEY ("estateId") REFERENCES "Estate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "EstateMember" ADD CONSTRAINT "EstateMember_estateId_fkey" FOREIGN KEY ("estateId") REFERENCES "Estate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "EstateMember" ADD CONSTRAINT "EstateMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Device" ADD CONSTRAINT "Device_estateId_fkey" FOREIGN KEY ("estateId") REFERENCES "Estate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

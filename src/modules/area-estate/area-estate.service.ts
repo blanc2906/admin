@@ -5,6 +5,8 @@ import { PBaseService } from '@base/services/p-base.service';
 import { EstateArea } from '@prisma/client';
 import { PrismaService } from '@prisma/services/prisma.service';
 
+import { CNotFoundException } from '@shared/exception/http.exception';
+
 import { CreateAreaEstateDto } from './dto/create-area-estate.dto';
 import { UpdateAreaEstateDto } from './dto/update-area-estate.dto';
 
@@ -14,53 +16,6 @@ export class AreaEstateService extends PBaseService<EstateArea> {
     super(prisma.estateArea);
   }
 
-  async paginationby(estateId: number, query: BQueryParams) {
-    const {
-      page,
-      limit = 10,
-      sortBy,
-      order = 'desc',
-      search,
-      searchFields = [],
-    } = query;
-
-    if (!page) throw new Error('Page is required');
-
-    const pageNumber = Number(page);
-    const limitNumber = Number(limit);
-    if (isNaN(pageNumber) || isNaN(limitNumber)) {
-      throw new Error('Page and limit must be numbers');
-    }
-
-    const skip = (pageNumber - 1) * limitNumber;
-    const take = limitNumber;
-
-    const orderBy = sortBy ? { [sortBy]: order } : undefined;
-
-    let where: any = { estateId };
-
-    if (search && searchFields.length > 0) {
-      where = {
-        ...where,
-        OR: searchFields.map((field) => ({
-          [field]: { contains: search, mode: 'insensitive' },
-        })),
-      };
-    }
-
-    const [items, total] = await Promise.all([
-      this.prisma.estateArea.findMany({ where, orderBy, skip, take }),
-      this.prisma.estateArea.count({ where }),
-    ]);
-
-    return {
-      items,
-      total,
-      page: pageNumber,
-      limit: limitNumber,
-      totalPages: Math.ceil(total / limitNumber),
-    };
-  }
   async create(dto: CreateAreaEstateDto) {
     //check estate exits
     const estate = await this.prisma.estate.findUnique({
@@ -70,7 +25,7 @@ export class AreaEstateService extends PBaseService<EstateArea> {
     });
 
     if (!estate) {
-      throw new NotFoundException('Estate not found');
+      throw new CNotFoundException('Estate not found');
     }
     return await super.create(dto as any);
   }
@@ -87,7 +42,11 @@ export class AreaEstateService extends PBaseService<EstateArea> {
     return await super.findById(id);
   }
 
-  async updateById(id: number, dto: UpdateAreaEstateDto) {
+  async findAll() {
+    return await super.findAll();
+  }
+
+  async update(id: number, dto: UpdateAreaEstateDto) {
     return await super.updateById(id, dto);
   }
 

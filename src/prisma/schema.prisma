@@ -76,14 +76,13 @@ model Estate {
   id               Int               @id @default(autoincrement())
   name             String            @db.VarChar(255) 
   description      String?
-  address          String?
   imageFileUrls    String[]          @default([])
   imageFileIds     String[]          @default([])
   type             EstateType
-  members          User[]            @relation("EstateMembers")
   areas            EstateArea[]
+  estateMembers    EstateMember[]
   devices          Device[]      
-  createdBy        AdminAccount?        @relation(fields: [createdById], references: [id])    
+  createdBy        AdminAccount?     @relation(fields: [createdById], references: [id])    
   createdById      Int?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -108,6 +107,28 @@ model EstateArea {
   @@index([estateId])
 }
 
+model EstateMember {
+  role              EstateMemberRole
+  estateId          Int
+  userId            Int 
+  nickname          String?           @db.VarChar(50)
+  status            EstateMemberStatus
+  globalUserId      Int?              
+  fullName          String?           @db.VarChar(255)
+  emailAddress      String?           @db.VarChar(255)
+  phoneNumber       String?           @db.VarChar(50)
+  imageUrl          String?           @db.Text
+  gender           String?           @db.VarChar(20)
+  dateOfBirth      DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+  estate            Estate            @relation(fields: [estateId], references: [id], onDelete: Cascade)
+
+  @@id([estateId, userId])
+  @@index([userId, estateId])
+}
+
 model Device {
   id Int @id @default(autoincrement()) 
   name String @db.VarChar(255)
@@ -123,14 +144,16 @@ model Device {
   
 }
 
-model User {
-  id Int @id @default(autoincrement())
-  name String @db.VarChar(255)
-  email String @unique
-  password String
-  estates Estate[] @relation("EstateMembers")
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
+
+
+enum EstateMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum EstateMemberStatus {
+  ACTIVE
+  PENDING
+  BLOCKED
 }

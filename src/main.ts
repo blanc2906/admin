@@ -7,11 +7,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 
+
 import { TAppConfig } from '@shared/config/app.config';
 import { GlobalExceptionsFilter } from '@shared/filter/global-exception.filter';
 import { CLogger } from '@shared/logger/custom-logger';
 
 import { AppModule } from './app.module';
+import { TransformInterceptor } from './shared/interceptors/transform-response.interceptor';
 import { ResponseInterceptor } from './shared/interceptor/response.interceptor';
 
 dotenv.config({
@@ -36,8 +38,11 @@ async function bootstrap() {
   }
   // End Enable TLS
   const app = await NestFactory.create<NestExpressApplication>(
+    
     AppModule,
+   
     options,
+  
   );
   // Get app configs
   const configService = app.get(ConfigService);
@@ -49,6 +54,19 @@ async function bootstrap() {
   // Global setup
   app.setGlobalPrefix(apiPrefix);
   app.useGlobalFilters(new GlobalExceptionsFilter());
+  app.useGlobalInterceptors(new TransformInterceptor());
+  //Validate global
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalPipes(
     new ValidationPipe({

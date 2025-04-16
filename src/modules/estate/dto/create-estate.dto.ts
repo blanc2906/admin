@@ -1,7 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { EstateType } from '@prisma/client';
 import {
+  IsArray,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -10,21 +11,20 @@ import {
 } from 'class-validator';
 
 export class CreateEstateDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Name of the estate',
+  })
   @IsString()
   @MaxLength(255)
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({ description: 'Description of the estate' })
+  @IsString()
   @IsOptional()
   description: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  address: string;
-
-  @ApiProperty({ enum: EstateType })
+  @ApiProperty({ enum: EstateType, description: 'Type of the estate' })
   @IsEnum(EstateType)
   type: EstateType = EstateType.DEFAULT;
 }

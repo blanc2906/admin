@@ -4,10 +4,16 @@ import { EstateMemberRole, EstateMemberStatus } from '@prisma/client';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateMemberDto {
+  @ApiProperty({
+    required: true,
+  })
   @IsString()
   @IsOptional()
   nickname?: string;
 
+  @ApiProperty({
+    required: true,
+  })
   @IsOptional()
   @ApiPropertyOptional({
     enum: EstateMemberRole,

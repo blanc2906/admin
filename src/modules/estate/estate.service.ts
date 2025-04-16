@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { BQueryParams } from '@base/dto/base.dto';
 import { PBaseService } from '@base/services/p-base.service';
 import { Estate, EstateType } from '@prisma/client';
 import { PrismaService } from '@prisma/services/prisma.service';
+
+import { ApiResponseCode } from '@shared/constant/response-code.constant';
+import { CNotFoundException } from '@shared/exception/http.exception';
 
 import { CreateEstateDto } from './dto/create-estate.dto';
 import { UpdateEstateDto } from './dto/update-estate.dto';
@@ -23,11 +31,7 @@ export class EstateService extends PBaseService<Estate> {
   }
 
   async findById(id: number) {
-    const estate = await super.findById(id);
-    if (!estate) {
-      throw new NotFoundException(`Estate with ID ${id} not found`);
-    }
-    return estate;
+    return await super.findById(id);
   }
 
   async findByIds(ids: number[]) {
@@ -40,7 +44,6 @@ export class EstateService extends PBaseService<Estate> {
   }
 
   async update(id: number, dto: UpdateEstateDto) {
-    await super.findById(id);
     return await super.updateById(id, dto as any);
   }
 
@@ -64,20 +67,18 @@ export class EstateService extends PBaseService<Estate> {
   }
 
   async deleteMany(ids: number[]) {
-    if (ids.length > 0) {
-      await this.findByIds(ids);
-    }
+    const estates = await this.findByIds(ids);
     return this.prisma.$transaction(async (tx) => {
       //delete area estate first
       await tx.estateArea.deleteMany({
         where: {
-          estateId: { in: ids },
+          estateId: { in: estates.map((estate) => estate.id) },
         },
       });
       //delete estate
       await tx.estate.deleteMany({
         where: {
-          id: { in: ids },
+          id: { in: estates.map((estate) => estate.id) },
         },
       });
     });
@@ -85,29 +86,31 @@ export class EstateService extends PBaseService<Estate> {
 
   async restore(id: number) {
     return this.prisma.$transaction(async (tx) => {
-      //restore estate
       const estate = await this.prisma.restore('Estate', { id });
-      //restore estate area
+
       await this.prisma.restore('EstateArea', { estateId: id });
-      //check if estate and estate area restored
+
       if (estate && estate.count > 0) {
         return this.findById(id);
       }
-      throw new NotFoundException(`Estate with ID ${id} not found`);
+      throw new CNotFoundException(
+        `Estate with ID ${id} not restored or not deleted`,
+      );
     });
   }
 
   async restoreMany(ids: number[]) {
     return this.prisma.$transaction(async (tx) => {
-      //restore estate
       const estates = await this.prisma.restore('Estate', { id: { in: ids } });
-      //restore estate area
+
       await this.prisma.restore('EstateArea', { estateId: { in: ids } });
-      //check if estate and estate area restored
+
       if (estates && estates.count > 0) {
         return this.findByIds(ids);
       }
-      throw new NotFoundException(`Estate with ID ${ids} not found`);
+      throw new CNotFoundException(
+        `Estate with ID ${ids} not restored or not deleted`,
+      );
     });
   }
 

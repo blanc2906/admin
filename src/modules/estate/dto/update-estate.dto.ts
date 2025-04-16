@@ -1,23 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 import { EstateType } from '@prisma/client';
 import { IsEnum, IsOptional } from 'class-validator';
 
-export class UpdateEstateDto {
-  @ApiProperty()
-  @IsOptional()
-  name: string;
+import { CreateEstateDto } from './create-estate.dto';
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  description: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  address: string;
-
-  @IsOptional()
-  @ApiPropertyOptional({ enum: EstateType })
-  @IsEnum(EstateType)
-  type: EstateType = EstateType.DEFAULT;
-}
+export class UpdateEstateDto extends PartialType(CreateEstateDto) {}

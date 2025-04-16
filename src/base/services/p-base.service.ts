@@ -1,13 +1,31 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
 import { PrismaService } from '@prisma/services/prisma.service';
+
+import { ApiResponseCode } from '@shared/constant/response-code.constant';
+import {
+  CBadRequestException,
+  CNotFoundException,
+} from '@shared/exception/http.exception';
 
 import { BQueryParams } from '../dto/base.dto';
 
+@Injectable()
 export class PBaseService<T> {
   constructor(protected model: any) {}
+
   async findAll() {
-    return this.model.findMany();
+    return await this.model.findMany();
   }
-  async pagination(query: BQueryParams) {
+
+  async pagination(
+    query: BQueryParams,
+    relationFilter?: { field: string; value: any },
+  ) {
     const {
       page,
       limit = 10,
@@ -18,14 +36,14 @@ export class PBaseService<T> {
     } = query;
 
     if (!page) {
-      throw new Error('Page is required');
+      throw new CBadRequestException('Page is required');
     }
 
     const pageNumber = Number(page);
     const limitNumber = Number(limit);
 
     if (isNaN(pageNumber) || isNaN(limitNumber)) {
-      throw new Error('Page and limit must be numbers');
+      throw new CBadRequestException('Page and limit must be numbers');
     }
 
     const skip = (pageNumber - 1) * limitNumber;
@@ -33,8 +51,20 @@ export class PBaseService<T> {
 
     const orderBy = sortBy ? { [sortBy]: order } : undefined;
     let where = {};
+
+    if (
+      relationFilter &&
+      relationFilter.field &&
+      relationFilter.value !== undefined
+    ) {
+      where = {
+        [relationFilter.field]: relationFilter.value,
+      };
+    }
+
     if (search && searchFields.length > 0) {
       where = {
+        ...where,
         OR: searchFields.map((field) => ({
           [field]: { contains: search, mode: 'insensitive' },
         })),
@@ -54,9 +84,9 @@ export class PBaseService<T> {
     return {
       items,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
     };
   }
 
@@ -64,36 +94,85 @@ export class PBaseService<T> {
     const where = {
       [key]: value,
     };
-
-    return this.model.findMany({ where });
+    return await this.model.findMany({ where });
   }
 
   async findOne(key: string, value: any) {
     const where = {
       [key]: value,
     };
-
-    return this.model.findFirst({ where });
+    const result = await this.model.findFirst({ where });
+    if (!result) {
+      throw new CNotFoundException('Not found');
+    }
+    return result;
   }
+
   async findById(id: number) {
-    return this.model.findUnique({
+    if (isNaN(id) || id < 1) {
+      throw new CBadRequestException('ID must be a positive number');
+    }
+    const result = await this.model.findUnique({
       where: { id },
     });
+
+    if (!result) {
+      throw new CNotFoundException(`Not found id=${id}`);
+    }
+
+    return result;
+  }
+
+  async findByIds(ids: number[]) {
+    if (
+      !Array.isArray(ids) ||
+      ids.some((id) => isNaN(Number(id)) || Number(id) < 1)
+    ) {
+      throw new CBadRequestException(
+        'IDs must be an array of positive numbers',
+      );
+    }
+
+    const numericIds = ids.map((id) => Number(id));
+
+    const result = await this.model.findMany({
+      where: { id: { in: numericIds } },
+    });
+
+    if (!result) {
+      throw new CNotFoundException(`Not found ids=${ids}`);
+    }
+
+    return result;
   }
 
   async create(data: Partial<T>) {
-    return this.model.create({ data });
+    return await this.model.create({ data });
   }
 
   async updateById(id: number, data: Partial<T>) {
-    return this.model.update({ where: { id }, data });
+    if (isNaN(id) || id < 1) {
+      throw new CBadRequestException('ID must be a positive number');
+    }
+    // Check if entity exists before updating
+    await this.model.findById(id);
+    return await this.model.update({ where: { id }, data });
   }
 
   async deleteById(id: number) {
-    return this.model.delete({ where: { id } });
+    if (isNaN(id) || id < 1) {
+      throw new CBadRequestException('ID must be a positive number');
+    }
+    await this.findById(id);
+    return await this.model.delete({ where: { id } });
   }
 
   async deleteMany(ids: number[]) {
-    return this.model.deleteMany({ where: { id: { in: ids } } });
+    if (!Array.isArray(ids) || ids.some((id) => isNaN(id) || id < 1)) {
+      throw new CBadRequestException(
+        'IDs must be an array of positive numbers',
+      );
+    }
+    return await this.model.deleteMany({ where: { id: { in: ids } } });
   }
 }

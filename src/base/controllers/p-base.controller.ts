@@ -1,5 +1,5 @@
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { ApiBody } from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 import { BQueryParams } from '@base/dto/base.dto';
 
@@ -12,11 +12,13 @@ export class BaseController<T> {
   }
 
   @Get()
+  @ApiQuery({ type: BQueryParams })
   async pagination(@Query() query: BQueryParams) {
     return (this.baseService as any).pagination(query);
   }
 
   @Get(':id')
+  @ApiParam({ name: 'id', type: 'number' })
   async findOne(@Param('id') id: string) {
     return (this.baseService as any).findById(id);
   }
@@ -28,27 +30,19 @@ export class BaseController<T> {
   }
 
   @Put(':id')
+  @ApiParam({ name: 'id', type: 'number' })
   async update(@Param('id') id: string, @Body() updateDto: Partial<any>) {
     return (this.baseService as any).updateById(id, updateDto);
   }
 
   @Delete(':id')
+  @ApiParam({ name: 'id', type: 'number' })
   async delete(@Param('id') id: string) {
     return (this.baseService as any).deleteById(id);
   }
 
   @Delete('many')
-  async deleteMany(@Body() ids: string[]) {
+  async deleteMany(@Body() ids: number[]) {
     return (this.baseService as any).deleteMany(ids);
-  }
-
-  @Put('restore/:id')
-  async restore(@Param('id') id: string) {
-    return (this.baseService as any).restoreById(id);
-  }
-
-  @Put('restore-many')
-  async restoreMany(@Body() ids: string[]) {
-    return (this.baseService as any).restoreMany(ids);
   }
 }

@@ -15,17 +15,10 @@ export class CreateAreaEstateDto {
   @IsOptional()
   description: string;
 
-  @ApiPropertyOptional({ required: false })
-  @IsOptional()
-  @IsArray()
-  imageFileUrls?: string[];
-
-  @ApiPropertyOptional({ required: false })
-  @IsOptional()
-  @IsArray()
-  imageFileIds?: string[];
-
-  @ApiProperty({ required: true })
+  @ApiProperty({
+    description: 'ID of the estate',
+    example: 1,
+  })
   @IsNumber()
   @IsNotEmpty()
   estateId: number;
