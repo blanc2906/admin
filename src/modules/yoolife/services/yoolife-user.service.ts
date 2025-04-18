@@ -27,8 +27,8 @@ export class YoolifeUserService {
         {
           params: {
             IsActive: params.isActive || true,
-            SkipCount: params.skipCount || 1,
-            MaxResultCount: params.maxResultCount || 10,
+            SkipCount: params.skipCount || 0,
+            //MaxResultCount: params.maxResultCount || 10,
             Keyword: params.keyword,
             OrderBy: params.orderBy,
             SortBy: params.sortBy,

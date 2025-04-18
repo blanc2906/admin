@@ -1,16 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@prisma/services/prisma.service';
 import { PBaseService } from '@base/services/p-base.service';
+import { EstateMember, EstateMemberRole, EstateMemberStatus } from '@prisma/client';
 import { UserService } from '@src/modules/user/services/user.service';
 
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';   
-import { DeleteManyMemberDto, DeleteMemberDto } from './dto/delete-member.dto';
+import { DeleteManyMemberDto } from './dto/delete-member.dto';
 import { FindAllUserDto } from '@src/modules/user/dto/find-all-user.dto';
-
-import { GetAllMembersDto } from './dto/estate-member.dto';
-import { UpdateStatusMemberDto } from './dto/update-member.dto';
-import { EstateMember, EstateMemberRole, EstateMemberStatus } from '@prisma/client';
+import { GetAllMembersDto } from './dto/get-all-member.dto';
+import { CNotFoundException, CBadRequestException } from '@shared/exception/http.exception';
 
 @Injectable()
 export class EstateMemberService extends PBaseService<EstateMember> {
@@ -21,30 +20,34 @@ export class EstateMemberService extends PBaseService<EstateMember> {
     super(prisma.estateMember);
   }
 
-  private readonly memberSelect = {
-    id: true,
-    name: true,
-    email: true,
-  };
-
+  /**
+   * Validate estate exists
+   */
   private async validateEstate(estateId: number) {
     const estate = await this.prisma.estate.findUnique({
       where: { id: estateId },
     });
 
     if (!estate) {
-      throw new NotFoundException(`Estate with ID ${estateId} not found`);
+      throw new CNotFoundException(`Estate with ID ${estateId} not found`);
     }
     return estate;
   }
+  
 
-  private async validateMember(estateId: number, memberId: number) {
+  /**
+   * Validate member exists in estate
+   */
+  private async validateMember(estateId: number, userId: number) {
     const member = await this.prisma.estateMember.findFirst({
-      where: { estateId, memberId },
+      where: { 
+        estateId: estateId,
+        userId: userId
+      },
     });
 
     if (!member) {
-      throw new NotFoundException(`Member with ID ${memberId} not found in estate ${estateId}`);
+      throw new CNotFoundException(`Member with ID ${userId} not found in estate ${estateId}`);
     }
     return member;
   }
@@ -61,10 +64,11 @@ export class EstateMemberService extends PBaseService<EstateMember> {
       ...(input.status && { status: input.status })
     };
 
-    return this.prisma.estateMember.findMany({
+    const members = await this.prisma.estateMember.findMany({
       where: whereCondition,
-      include: { user: { select: this.memberSelect } },
     });
+
+    return members;
   }
 
   /**
@@ -76,133 +80,117 @@ export class EstateMemberService extends PBaseService<EstateMember> {
     const findUserParams: FindAllUserDto = {
       keyword: input.account,
       skipCount: 0,
-      maxResultCount: 10
+      //maxResultCount: 10
     };
     
-    const usersResult = await this.userService.findAll(findUserParams);
-    
-    if (!usersResult?.data) {
-      throw new NotFoundException(`User with email ${input.account} not found`);
-    }
-    
-    const userData = Array.isArray(usersResult.data) ? usersResult.data : [usersResult.data];
-    
-    if (userData.length === 0) {
-      throw new NotFoundException(`User with email ${input.account} not found`);
-    }
-    
-    const user = userData.find(u => 
-      (u.emailAddress && u.emailAddress === input.account) || 
-      (u.email && u.email === input.account)
-    );
-    
-    if (!user) {
-      throw new NotFoundException(`User with email ${input.account} not found`);
-    }
-    
-    const userIdRaw = user.id || user.globalId;
-    if (userIdRaw === undefined) {
-      throw new Error(`User found but no valid ID for user with email ${input.account}`);
-    }
-    
-    const userId = Number(userIdRaw);
+    try {
+      const usersResult = await this.userService.findAll(findUserParams);
+      
+      if (!usersResult?.data || !Array.isArray(usersResult.data) || usersResult.data.length === 0) {
+        throw new CNotFoundException(`User with account ${input.account} not found`);
+      }
+      
+      const user = usersResult.data.find(u => 
+        (u.emailAddress && u.emailAddress === input.account) || 
+        (u.email && u.email === input.account)
+      );
+      
+      if (!user) {
+        throw new CNotFoundException(`User with account ${input.account} not found`);
+      }
+      
+      const userId = user.id || user.globalId;
+      const existingMember = await this.prisma.estateMember.findFirst({
+        where: { 
+          estateId: estateId,
+          userId: userId,
+          OR: [
+            { deletedAt: null },
+            { deletedAt: { not: null } }
+          ]
+        },
+      });
 
-    // Ensure user exists in local database
-    const localUser = await this.prisma.estateMember.findUnique({
-      where: { memberId: userId }
-    });
+      if (existingMember) {
+        if (existingMember.deletedAt) {
+          // Nếu member đã bị soft delete, restore lại
+          await this.prisma.estateMember.update({
+            where: { 
+              estateId_userId: {
+                estateId,
+                userId
+              }
+            },
+            data: {
+              deletedAt: null,
+              nickname: input.nickname,
+              role: input.role || EstateMemberRole.MEMBER,
+              status: EstateMemberStatus.PENDING,
+              updatedAt: new Date()
+            }
+          });
 
-    if (!localUser) {
-      // Create user in local database if it doesn't exist
-      await this.prisma.estateMember.create({
+          return this.prisma.estateMember.findFirst({
+            where: { 
+              estateId: estateId,
+              userId: userId,
+              deletedAt: null
+            }
+          });
+        }
+        throw new CBadRequestException(`User ${input.account} is already a member of this estate`);
+      }
+
+      // Create new member
+      return this.prisma.estateMember.create({
         data: {
-          memberId: userId,
-          //name: user.name || user.fullName || '',
-          //email: user.emailAddress || user.email || input.account,
-          password: '', // You might want to generate a random password or handle this differently
+          estateId,
+          userId,
+          nickname: input.nickname,
+          role: input.role || EstateMemberRole.MEMBER,
+          status: EstateMemberStatus.PENDING,
+          fullName: user.fullName || user.name || '',
+          emailAddress: user.emailAddress || user.email || input.account,
+          imageUrl: user.imageUrl || null,
+          globalUserId: user.globalId || null
         }
       });
-    }
-    
-    const memberData = {
-      nickname: input.nickname,
-      role: input.role || EstateMemberRole.MEMBER,
-      status: EstateMemberStatus.PENDING,
-    };
-
-    const existingMember = await this.prisma.estateMember.findUnique({
-      where: { estateId_memberId: { estateId, userId } },
-    });
-
-    if (existingMember) {
-      if (existingMember.deletedAt) {
-        await this.prisma.restore('EstateMember', { 
-          estateId_userId: { estateId, userId }
-        });
-
-        return this.prisma.estateMember.update({
-          where: { estateId_userId: { estateId, userId } },
-          data: memberData,
-          include: { user: { select: this.userSelect } },
-        });
+      
+    } catch (error) {
+      if (error instanceof CNotFoundException || error instanceof CBadRequestException) {
+        throw error;
       }
-      throw new Error(`User ${input.account} is already a member of this estate`);
+      throw new CBadRequestException(`Failed to add member: ${error.message}`);
     }
-
-    return this.prisma.estateMember.create({
-      data: {
-        estateId,
-        userId,
-        ...memberData,
-      },
-      include: { user: { select: this.userSelect } },
-    });
   }
 
   /**
    * Update member's details
    */
-  async update(estateId: number, memberId: number, input: UpdateMemberDto) {
+  async update(estateId: number, userId: number, input: UpdateMemberDto) {
     await this.validateEstate(estateId);
-    await this.validateMember(estateId, memberId);
+    await this.validateMember(estateId, userId);
 
-    return this.prisma.estateMember.update({
-      where: { estateId_userId: { estateId, userId: memberId } },
+    await this.prisma.estateMember.updateMany({
+      where: {
+        estateId: estateId,
+        userId: userId,
+        deletedAt: null
+      },
       data: {
         nickname: input.nickname,
         role: input.role,
-      },
-      include: { user: { select: this.userSelect } },
+        status: input.status,
+        updatedAt: new Date()
+      }
     });
-  }
 
-  /**
-   * Update member's status
-   */
-  async updateStatus(estateId: number, memberId: number, input: UpdateStatusMemberDto) {
-    await this.validateEstate(estateId);
-    await this.validateMember(estateId, memberId);
-
-    return this.prisma.estateMember.update({
-      where: { estateId_userId: { estateId, userId: memberId } },
-      data: { status: input.status },
-      include: { user: { select: this.userSelect } },
-    });
-  }
-
-  /**
-   * Remove member from estate
-   */
-  async remove(estateId: number, input: DeleteMemberDto) {
-    await this.validateEstate(estateId);
-    const member = await this.validateMember(estateId, input.userId);
-
-    if (member.role === EstateMemberRole.OWNER) {
-      throw new Error('Cannot remove the owner of the estate');
-    }
-
-    return this.prisma.estateMember.delete({
-      where: { estateId_userId: { estateId, userId: input.userId } },
+    return this.prisma.estateMember.findFirst({
+      where: {
+        estateId: estateId,
+        userId: userId,
+        deletedAt: null
+      }
     });
   }
 
@@ -217,15 +205,23 @@ export class EstateMemberService extends PBaseService<EstateMember> {
     }
 
     const members = await this.prisma.estateMember.findMany({
-      where: { estateId, userId: { in: input.ids } },
+      where: { estateId, userId: { in: input.ids } }
     });
 
     if (members.some(member => member.role === EstateMemberRole.OWNER)) {
-      throw new Error('Cannot remove the owner of the estate');
+      throw new CBadRequestException('Cannot remove the owner of the estate');
     }
 
-    return this.prisma.estateMember.deleteMany({
-      where: { estateId, userId: { in: input.ids } },
+    return this.prisma.estateMember.updateMany({
+      where: { 
+        estateId, 
+        userId: { in: input.ids },
+        deletedAt: null
+      },
+      data: {
+        deletedAt: new Date(),
+        updatedAt: new Date()
+      }
     });
   }
 }

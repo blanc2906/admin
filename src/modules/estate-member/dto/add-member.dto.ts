@@ -13,26 +13,14 @@ export class AddMemberDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty({
-      required: true,
-    })
+    required: true,
+    example: 'user@example.com'
+  })
   account: string;
-
-  // @ApiProperty({
-  //   required: true,
-  // })
-  // @IsString()
-  // @IsOptional()
-  // tenancyName?: string;
-
-  // @ApiProperty({
-  //   required: true,
-  // })
-  // @IsNumber()
-  // @IsOptional()
-  // tenancyId?: number;
 
   @ApiProperty({
     required: true,
+    example: 'cr7'
   })
   @IsString()
   @IsNotEmpty()
@@ -41,10 +29,8 @@ export class AddMemberDto {
   @ApiPropertyOptional({
     enum: EstateMemberRole,
     default: EstateMemberRole.MEMBER,
-  })
-  @ApiProperty({
-    required: true,
-    enum: ['OWNER', 'ADMIN' , 'MEMBER'],
+    example: EstateMemberRole.MEMBER,
+    enumName: 'EstateMemberRole'
   })
   @IsEnum(EstateMemberRole)
   role?: EstateMemberRole = EstateMemberRole.MEMBER;

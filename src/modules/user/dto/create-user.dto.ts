@@ -35,9 +35,9 @@ export class CreateUserDto {
   @IsOptional()
   isActive: true;
 
-  @ApiProperty({
-    required: false,
-  })
+  // @ApiProperty({
+  //   required: false,
+  // })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -80,15 +80,15 @@ export class CreateUserDto {
   @IsIn(['male', 'female'])
   gender: string;
 
-  @ApiProperty({
-    required: false,
-  })
+  // @ApiProperty({
+  //   required: false,
+  // })
   @IsOptional()
   nationality: string;
 
-  @ApiProperty({
-    required: false,
-  })
+  // @ApiProperty({
+  //   required: false,
+  // })
   @IsOptional()
   imageUrl: string;
 }

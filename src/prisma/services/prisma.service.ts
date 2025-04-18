@@ -8,7 +8,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     'Estate',
     'EstateArea',
     'Device',
-    'User',
+    'EstateMember',
     'AdminAccount',
   ];
   private isRestore = false;
@@ -148,7 +148,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       Estate: 'estate',
       EstateArea: 'estateArea',
       Device: 'device',
-      User: 'user',
+      EstateMember: 'estateMember',
       AdminAccount: 'adminAccount',
     };
     //flag restore
@@ -183,7 +183,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       Estate: 'estate',
       EstateArea: 'estateArea',
       Device: 'device',
-      User: 'user',
+      EstateMember: 'estateMember',
       AdminAccount: 'adminAccount',
     };
     this.isRestore = true;
