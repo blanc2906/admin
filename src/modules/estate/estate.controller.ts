@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@auth/guards/roles.guard';
 import { BaseController } from '@base/controllers/p-base.controller';
 import { BQueryParams } from '@base/dto/base.dto';
 import { Estate } from '@prisma/client';
@@ -29,17 +31,10 @@ import { EstateService } from './estate.service';
 
 @ApiTags('Estate')
 @Controller('estates')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
-export class EstateController extends BaseController<EstateService> {
-  constructor(private readonly estateService: EstateService) {
-    super(estateService);
-  }
-
-  @Get('all')
-  @ApiOperation({ summary: 'Find all estates ' })
-  async findAll() {
-    return await this.estateService.findAll();
-  }
+export class EstateController {
+  constructor(private readonly estateService: EstateService) {}
 
   @Get()
   @ApiOperation({ summary: 'Pagination estates ' })
@@ -58,8 +53,14 @@ export class EstateController extends BaseController<EstateService> {
   async create(@Body() createEstateDto: CreateEstateDto) {
     return this.estateService.create(createEstateDto);
   }
+  @Patch('restore')
+  @ApiOperation({ summary: 'Restore one or many estates ' })
+  @ApiBody({ type: RestoreEstatesDto })
+  async restoreEstates(@Body() restoreEstates: RestoreEstatesDto) {
+    return this.estateService.restoreMany(restoreEstates.ids);
+  }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({ summary: 'Update estate by ID ' })
   async update(
     @Param('id') id: string,
@@ -69,28 +70,9 @@ export class EstateController extends BaseController<EstateService> {
   }
 
   @Delete()
-  @ApiOperation({ summary: 'Delete many estates' })
+  @ApiOperation({ summary: 'Delete one or many estates' })
   @ApiBody({ type: DeleteEstatesDto })
   async deleteEstates(@Body() deleteEstatesDto: DeleteEstatesDto) {
     return this.estateService.deleteMany(deleteEstatesDto.ids);
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete estate by ID' })
-  async delete(@Param('id') id: string) {
-    return this.estateService.delete(+id);
-  }
-
-  @Patch('restore')
-  @ApiOperation({ summary: 'Restore many estates ' })
-  @ApiBody({ type: RestoreEstatesDto })
-  async restoreEstates(@Body() restoreEstates: RestoreEstatesDto) {
-    return this.estateService.restoreMany(restoreEstates.ids);
-  }
-
-  @Patch('/:id/restore')
-  @ApiOperation({ summary: 'Restore estate by ID ' })
-  async restore(@Param('id') id: string) {
-    return this.estateService.restore(+id);
   }
 }

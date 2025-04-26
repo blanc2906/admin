@@ -7,14 +7,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 
-
 import { TAppConfig } from '@shared/config/app.config';
 import { GlobalExceptionsFilter } from '@shared/filter/global-exception.filter';
 import { CLogger } from '@shared/logger/custom-logger';
 
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './shared/interceptors/transform-response.interceptor';
-import { ResponseInterceptor } from './shared/interceptor/response.interceptor';
 
 dotenv.config({
   path:
@@ -38,11 +36,8 @@ async function bootstrap() {
   }
   // End Enable TLS
   const app = await NestFactory.create<NestExpressApplication>(
-    
     AppModule,
-   
     options,
-  
   );
   // Get app configs
   const configService = app.get(ConfigService);
@@ -61,20 +56,9 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
     }),
   );
 
-  app.useGlobalInterceptors(new ResponseInterceptor());
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Loại bỏ các field không có trong DTO
-      forbidNonWhitelisted: true, // Báo lỗi nếu có field lạ
-      transform: true, // Tự động chuyển đổi kiểu dữ liệu (string → number, v.v.)
-    }),
-  );
   // Swagger setup
   const document = SwaggerModule.createDocument(
     app,

@@ -30,36 +30,16 @@ export class AreaEstateService extends PBaseService<EstateArea> {
     return await super.create(dto as any);
   }
 
-  async find(key: string, estateId: any) {
-    const areas = await super.find(key, estateId);
-    return areas.map((area) => ({
-      ...area,
-      estate: area.estate,
-    }));
-  }
-
   async findById(id: number) {
     return await super.findById(id);
-  }
-
-  async findAll() {
-    return await super.findAll();
   }
 
   async update(id: number, dto: UpdateAreaEstateDto) {
     return await super.updateById(id, dto);
   }
 
-  async deleteById(id: number) {
-    return await super.deleteById(id);
-  }
-
   async deleteMany(ids: number[]) {
     return await super.deleteMany(ids);
-  }
-
-  async restore(id: number) {
-    return await this.prisma.restore('EstateArea', { id });
   }
 
   async restoreMany(ids: number[]) {

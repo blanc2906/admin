@@ -4,8 +4,6 @@ import { EstateMemberRole } from '@prisma/client';
 import {
   IsEnum,
   IsNotEmpty,
-  IsNumber,
-  IsOptional,
   IsString,
 } from 'class-validator';
 

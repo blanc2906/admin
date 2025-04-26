@@ -1,7 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EstateMemberRole, EstateMemberStatus } from '@prisma/client';
-import { IsEnum, IsNumber, IsOptional } from 'class-validator';
+import { IsEnum, IsOptional } from 'class-validator';
 
 
 export class GetAllMembersDto {

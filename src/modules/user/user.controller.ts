@@ -1,5 +1,16 @@
-import { Body, Controller, Delete, Get, Post, Query } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
+import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@auth/guards/roles.guard';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { DeleteMultipleUserDto } from './dto/delete-multiple-user.dto';
@@ -8,6 +19,8 @@ import { UserService } from './services/user.service';
 
 @Controller('user')
 @ApiTags('User')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

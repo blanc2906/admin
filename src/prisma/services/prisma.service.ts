@@ -8,8 +8,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     'Estate',
     'EstateArea',
     'Device',
+    'DeviceBrand',
     'EstateMember',
     'AdminAccount',
+    'Configuration',
   ];
   private isRestore = false;
   async onModuleInit() {
@@ -148,8 +150,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       Estate: 'estate',
       EstateArea: 'estateArea',
       Device: 'device',
+      DeviceBrand: 'deviceBrand',
       EstateMember: 'estateMember',
       AdminAccount: 'adminAccount',
+      Configuration: 'configuration',
     };
     //flag restore
     this.isRestore = true;
@@ -183,8 +187,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       Estate: 'estate',
       EstateArea: 'estateArea',
       Device: 'device',
+      DeviceBrand : 'deviceBrand',
       EstateMember: 'estateMember',
       AdminAccount: 'adminAccount',
+      Configuration: 'configuration',
     };
     this.isRestore = true;
     try {

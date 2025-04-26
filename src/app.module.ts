@@ -14,10 +14,10 @@ import { EstateModule } from '@src/modules/estate/estate.module';
 import { FeatureModule } from '@src/modules/feature/feature.module';
 
 import { AreaEstateModule } from './modules/area-estate/area-estate.module';
-
+import { EstateMemberModule } from './modules/estate-member/estate-member.module';
 import { UserModule } from './modules/user/user.module';
 import { YoolifeModule } from './modules/yoolife/yoolife.module';
-import { EstateMemberModule } from './modules/estate-member/estate-member.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -35,7 +35,7 @@ import { EstateMemberModule } from './modules/estate-member/estate-member.module
     FeatureModule,
     UserModule,
     YoolifeModule,
-    EstateMemberModule
+    EstateMemberModule,
   ],
   controllers: [],
 })

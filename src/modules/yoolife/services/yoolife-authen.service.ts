@@ -9,17 +9,30 @@ export class YoolifeAuthenticateService implements OnModuleInit {
   YOOLIFE_URL_PATH: string;
   YOOLIFE_ACCOUNT: string;
   YOOLIFE_PASSWORD: string;
-  private accessToken: string;
+  
+  private accessToken: string = null;
+  private expiresAt: number = null;
 
   async onModuleInit() {
     this.YOOLIFE_URL_PATH = await this.mconfigService.get<string>('YOOLIFE_URL');
     this.YOOLIFE_ACCOUNT = await this.mconfigService.get<string>('YOOLIFE_ACCOUNT');
     this.YOOLIFE_PASSWORD = await this.mconfigService.get<string>('YOOLIFE_PASSWORD');
+    
+    try {
+      await this.authenticate();
+    } catch (error) {
+      console.error('Initial authentication failed:', error.message);
+    }
+  }
+
+  private isTokenExpired(): boolean {
+    if (!this.accessToken || !this.expiresAt) return true;
+    return Date.now() >= this.expiresAt;
   }
 
   async authenticate() {
     try {
-      if (this.accessToken) {
+      if (this.accessToken && !this.isTokenExpired()) {
         return this.accessToken;
       }
 
@@ -32,27 +45,13 @@ export class YoolifeAuthenticateService implements OnModuleInit {
       );
 
       this.accessToken = response.data.result.accessToken;
+      const expireInSeconds = response.data.result.expireInSeconds;
+    
+      this.expiresAt = Date.now() + (expireInSeconds * 1000);
+      
       return this.accessToken;
     } catch (error) {
-      console.error('Authentication Error:', error.response?.data || error.message);
-      throw new Error('Authentication failed');
-    }
-  }
-
-  async getAccessToken(refreshToken: string) {
-    try {
-      const response = await axios.post(
-        `${this.YOOLIFE_URL_PATH}/api/TokenAuth/RefreshToken`,
-        {
-          refreshToken,
-        },
-      );
-
-      this.accessToken = response.data.result.accessToken;
-      return this.accessToken;
-    } catch (error) {
-      console.error('Refresh Token Error:', error.response?.data || error.message);
-      throw new Error('Failed to refresh token');
+      throw new Error(`Authentication failed: ${error.message}`);
     }
   }
 }

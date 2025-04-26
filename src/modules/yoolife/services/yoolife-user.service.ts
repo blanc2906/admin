@@ -11,16 +11,9 @@ export class YoolifeUserService {
     private readonly yoolifeAuthService: YoolifeAuthenticateService,
   ) {}
 
-  private async getAuthHeaders() {
-    const token = await this.yoolifeAuthService.authenticate();
-    return {
-      Authorization: `Bearer ${token}`,
-    };
-  }
-
   async findAllUsers(params: FindAllUserDto) {
     try {
-      const headers = await this.getAuthHeaders();
+      const token = await this.yoolifeAuthService.authenticate();
       
       const res = await axios.get(
         `${this.yoolifeAuthService.YOOLIFE_URL_PATH}/api/services/app/IOTUserManager/GetAll`,
@@ -28,12 +21,13 @@ export class YoolifeUserService {
           params: {
             IsActive: params.isActive || true,
             SkipCount: params.skipCount || 0,
-            //MaxResultCount: params.maxResultCount || 10,
             Keyword: params.keyword,
             OrderBy: params.orderBy,
             SortBy: params.sortBy,
           },
-          headers,
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
         },
       );
 
@@ -48,11 +42,15 @@ export class YoolifeUserService {
 
   async create(body: CreateUserDto) {
     try {
-      const headers = await this.getAuthHeaders();
+      const token = await this.yoolifeAuthService.authenticate();
       const res: AxiosResponse<YoolifeResponseDto<any>> = await axios.post(
         `${this.yoolifeAuthService.YOOLIFE_URL_PATH}/api/services/app/IOTUserManager/Create`,
         body,
-        { headers }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
       return res.data.result.success;
     } catch (e) {
@@ -63,10 +61,15 @@ export class YoolifeUserService {
 
   async remove(ids: number[]) {
     try {
-      const headers = await this.getAuthHeaders();
+      const token = await this.yoolifeAuthService.authenticate();
       const res: AxiosResponse<YoolifeResponseDto<any>> = await axios.delete(
         `${this.yoolifeAuthService.YOOLIFE_URL_PATH}/api/services/app/IOTUserManager/DeleteMultiple`,
-        { headers }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          data: { ids }
+        }
       );
       return res.data.result.success;
     } catch (e) {

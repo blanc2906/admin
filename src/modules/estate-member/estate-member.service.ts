@@ -34,7 +34,6 @@ export class EstateMemberService extends PBaseService<EstateMember> {
     return estate;
   }
   
-
   /**
    * Validate member exists in estate
    */
@@ -80,82 +79,75 @@ export class EstateMemberService extends PBaseService<EstateMember> {
     const findUserParams: FindAllUserDto = {
       keyword: input.account,
       skipCount: 0,
-      //maxResultCount: 10
     };
     
     try {
       const usersResult = await this.userService.findAll(findUserParams);
-      
-      if (!usersResult?.data || !Array.isArray(usersResult.data) || usersResult.data.length === 0) {
+      if (!usersResult?.data) {
         throw new CNotFoundException(`User with account ${input.account} not found`);
       }
-      
       const user = usersResult.data.find(u => 
         (u.emailAddress && u.emailAddress === input.account) || 
         (u.email && u.email === input.account)
       );
-      
       if (!user) {
         throw new CNotFoundException(`User with account ${input.account} not found`);
       }
       
       const userId = user.id || user.globalId;
-      const existingMember = await this.prisma.estateMember.findFirst({
-        where: { 
-          estateId: estateId,
-          userId: userId,
-          OR: [
-            { deletedAt: null },
-            { deletedAt: { not: null } }
-          ]
-        },
-      });
-
-      if (existingMember) {
-        if (existingMember.deletedAt) {
-          // Nếu member đã bị soft delete, restore lại
-          await this.prisma.estateMember.update({
-            where: { 
-              estateId_userId: {
+      
+  
+      this.prisma['isRestore'] = true;
+      try {
+        const existingMember = await this.prisma.estateMember.findFirst({
+          where: { 
+            estateId,
+            userId
+          }
+        });
+  
+        if (existingMember) {
+          if (existingMember.deletedAt) {
+            await this.prisma.estateMember.updateMany({
+              where: {
+                estateId,
+                userId
+              },
+              data: {
+                deletedAt: null,
+                nickname: input.nickname,
+                role: input.role || EstateMemberRole.MEMBER,
+                status: EstateMemberStatus.PENDING
+              }
+            });
+  
+            return this.prisma.estateMember.findFirst({
+              where: {
                 estateId,
                 userId
               }
-            },
+            });
+          } else {
+            throw new CBadRequestException(`User ${input.account} is already a member of this estate`);
+          }
+        } else {
+          return this.prisma.estateMember.create({
             data: {
-              deletedAt: null,
+              estateId,
+              userId,
               nickname: input.nickname,
               role: input.role || EstateMemberRole.MEMBER,
               status: EstateMemberStatus.PENDING,
-              updatedAt: new Date()
-            }
-          });
-
-          return this.prisma.estateMember.findFirst({
-            where: { 
-              estateId: estateId,
-              userId: userId,
-              deletedAt: null
+              fullName: user.fullName || user.name || '',
+              emailAddress: user.emailAddress || user.email || input.account,
+              imageUrl: user.imageUrl || null,
+              globalUserId: user.globalId || null
             }
           });
         }
-        throw new CBadRequestException(`User ${input.account} is already a member of this estate`);
+      } finally {
+        this.prisma['isRestore'] = false;
       }
-
-      // Create new member
-      return this.prisma.estateMember.create({
-        data: {
-          estateId,
-          userId,
-          nickname: input.nickname,
-          role: input.role || EstateMemberRole.MEMBER,
-          status: EstateMemberStatus.PENDING,
-          fullName: user.fullName || user.name || '',
-          emailAddress: user.emailAddress || user.email || input.account,
-          imageUrl: user.imageUrl || null,
-          globalUserId: user.globalId || null
-        }
-      });
-      
     } catch (error) {
       if (error instanceof CNotFoundException || error instanceof CBadRequestException) {
         throw error;
@@ -180,8 +172,7 @@ export class EstateMemberService extends PBaseService<EstateMember> {
       data: {
         nickname: input.nickname,
         role: input.role,
-        status: input.status,
-        updatedAt: new Date()
+        status: input.status
       }
     });
 
@@ -219,8 +210,7 @@ export class EstateMemberService extends PBaseService<EstateMember> {
         deletedAt: null
       },
       data: {
-        deletedAt: new Date(),
-        updatedAt: new Date()
+        deletedAt: new Date()
       }
     });
   }

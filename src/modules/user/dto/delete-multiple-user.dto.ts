@@ -9,6 +9,5 @@ export class DeleteMultipleUserDto {
   @ApiProperty({
     example: [1],
   })
-  //   @IsNotEmpty()
   ids: number[];
 }

@@ -155,7 +155,7 @@ export class PBaseService<T> {
       throw new CBadRequestException('ID must be a positive number');
     }
     // Check if entity exists before updating
-    await this.model.findById(id);
+    await this.findById(id);
     return await this.model.update({ where: { id }, data });
   }
 

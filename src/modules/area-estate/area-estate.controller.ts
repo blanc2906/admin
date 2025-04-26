@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@auth/guards/roles.guard';
 import { BQueryParams } from '@base/dto/base.dto';
 
 import { AreaEstateService } from '../area-estate/area-estate.service';
@@ -22,6 +24,7 @@ import { RestoreAreasDto } from './dto/restore-areas.dto';
 
 @ApiTags('Area Estate')
 @Controller('area-estate')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class AreaEstateController {
   constructor(private readonly areaEstateService: AreaEstateService) {}
@@ -32,13 +35,7 @@ export class AreaEstateController {
     return this.areaEstateService.create(dto);
   }
 
-  @Get('estate/:estateId/all')
-  @ApiOperation({ summary: 'Find all area estates by estate ID ' })
-  async findAll(@Param('estateId') estateId: string) {
-    return this.areaEstateService.find('estateId', +estateId);
-  }
-
-  @Get('estate/:estateId/pagination')
+  @Get('estate/:estateId')
   @ApiOperation({ summary: 'Pagination area estates by estate ID ' })
   async pagination(
     @Param('estateId') estateId: string,
@@ -50,47 +47,29 @@ export class AreaEstateController {
     });
   }
 
-  @Get('all')
-  @ApiOperation({ summary: 'Find all area-estates' })
-  async findAllAreaEstate() {
-    return this.areaEstateService.findAll();
-  }
-
   @Get(':id')
   @ApiOperation({ summary: 'Find area estate by ID ' })
   async findById(@Param('id') id: string) {
     return this.areaEstateService.findById(+id);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Update area estate by ID ' })
-  async update(@Param('id') id: string, @Body() dto: UpdateAreaEstateDto) {
-    return this.areaEstateService.update(+id, dto);
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete area estate by ID ' })
-  async delete(@Param('id') id: string) {
-    return this.areaEstateService.deleteById(+id);
-  }
-
-  @Delete()
-  @ApiOperation({ summary: 'Delete many area estates ' })
-  @ApiBody({ type: DeleteAreasDto })
-  async deleteMany(@Body() deleteAreasDto: DeleteAreasDto) {
-    return this.areaEstateService.deleteMany(deleteAreasDto.ids);
-  }
-
   @Patch('restore')
-  @ApiOperation({ summary: 'Restore many area estates ' })
+  @ApiOperation({ summary: 'Restore one or many area estates ' })
   @ApiBody({ type: RestoreAreasDto })
   async restoreMany(@Body() restoreAreasDto: RestoreAreasDto) {
     return this.areaEstateService.restoreMany(restoreAreasDto.ids);
   }
 
-  @Patch('/:id/restore')
-  @ApiOperation({ summary: 'Restore area estate by ID ' })
-  async restore(@Param('id') id: string) {
-    return this.areaEstateService.restore(+id);
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update area estate by ID ' })
+  async update(@Param('id') id: string, @Body() dto: UpdateAreaEstateDto) {
+    return this.areaEstateService.update(+id, dto);
+  }
+
+  @Delete()
+  @ApiOperation({ summary: 'Delete one or many area estates ' })
+  @ApiBody({ type: DeleteAreasDto })
+  async deleteMany(@Body() deleteAreasDto: DeleteAreasDto) {
+    return this.areaEstateService.deleteMany(deleteAreasDto.ids);
   }
 }

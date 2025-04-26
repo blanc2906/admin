@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsArray, IsInt, IsNumber, IsOptional } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsNumber } from 'class-validator';
 
 
 export class DeleteManyMemberDto {

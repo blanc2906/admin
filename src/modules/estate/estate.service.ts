@@ -25,11 +25,6 @@ export class EstateService extends PBaseService<Estate> {
   async create(dto: CreateEstateDto) {
     return await super.create(dto as any);
   }
-
-  async findAll() {
-    return await super.findAll();
-  }
-
   async findById(id: number) {
     return await super.findById(id);
   }
@@ -47,25 +42,6 @@ export class EstateService extends PBaseService<Estate> {
     return await super.updateById(id, dto as any);
   }
 
-  async delete(id: number) {
-    await this.findById(id);
-
-    return this.prisma.$transaction(async (tx) => {
-      //delete area estate first
-      await tx.estateArea.deleteMany({
-        where: {
-          estateId: id,
-        },
-      });
-      //delete estate
-      await tx.estate.delete({
-        where: {
-          id,
-        },
-      });
-    });
-  }
-
   async deleteMany(ids: number[]) {
     const estates = await this.findByIds(ids);
     return this.prisma.$transaction(async (tx) => {
@@ -81,21 +57,6 @@ export class EstateService extends PBaseService<Estate> {
           id: { in: estates.map((estate) => estate.id) },
         },
       });
-    });
-  }
-
-  async restore(id: number) {
-    return this.prisma.$transaction(async (tx) => {
-      const estate = await this.prisma.restore('Estate', { id });
-
-      await this.prisma.restore('EstateArea', { estateId: id });
-
-      if (estate && estate.count > 0) {
-        return this.findById(id);
-      }
-      throw new CNotFoundException(
-        `Estate with ID ${id} not restored or not deleted`,
-      );
     });
   }
 

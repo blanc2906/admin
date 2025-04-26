@@ -22,6 +22,11 @@ enum EstateType {
   SCHOOL
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  SUB_ADMIN
+}
+
 model Configuration{
     id Int @id @default(autoincrement())
     key String @unique
@@ -32,31 +37,13 @@ model AdminAccount {
   id        Int       @id @default(autoincrement())
   email     String    @unique
   password  String
-  roles     Role[]    @relation("AdminAccountRoles")
-  estate    Estate[]
+  role      AdminRole @default(SUB_ADMIN)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   active    Boolean   @default(true)
   deletedAt DateTime?
   @@index([email])
   @@index([active])
-}
-
-model Role {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique
-  permissions Permission[]  @relation("RolePermissions")
-  accounts    AdminAccount[] @relation("AdminAccountRoles")
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-}
-
-model Permission {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  roles     Role[]    @relation("RolePermissions")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
 }
 
 // for features module
@@ -82,14 +69,10 @@ model Estate {
   areas            EstateArea[]
   estateMembers    EstateMember[]
   devices          Device[]      
-  createdBy        AdminAccount?     @relation(fields: [createdById], references: [id])    
-  createdById      Int?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
-
   @@index([type])
-  @@index([createdById])
 }
 
 model EstateArea {
@@ -144,6 +127,18 @@ model Device {
   
 }
 
+model DeviceBrand {
+  id            Int         @id @default(autoincrement())
+  name          String      @db.VarChar(255)
+  code          String      @db.VarChar(255) @unique
+  isDefault     Boolean
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  @@index([isDefault])
+  @@index([code])
+}
 
 
 enum EstateMemberRole {
